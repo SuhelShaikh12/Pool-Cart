@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>My Pool Requests</title>
+  <link rel="stylesheet" href="style.css" />
+
+  <!-- Firebase App & Firestore Auth -->
+  <script type="module">
+    import {
+      getFirestore, collection, onSnapshot
+    } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+    import {
+      getAuth, onAuthStateChanged
+    } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+
+    import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBWRDU9WCvVjns7If96eLze75v6tIldOVQ",
+      authDomain: "pooltogether-69b50.firebaseapp.com",
+      projectId: "pooltogether-69b50",
+      storageBucket: "pooltogether-69b50.appspot.com",
+      messagingSenderId: "531393414453",
+      appId: "1:531393414453:web:21a9de47373e35eb81787c"
+    };
+
+    const app = getApps().length ? getApps()[0] : initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const auth = getAuth(app);
+
+    const myList = document.getElementById("myRequestList");
+
+    onAuthStateChanged(auth, (user) => {
+      if (!user) {
+        alert("You need to login to view your requests");
+        window.location.href = "index.html";
+        return;
+      }
+
+      onSnapshot(collection(db, "requests"), (snapshot) => {
+        myList.innerHTML = "";
+        snapshot.forEach((docSnap) => {
+          const data = docSnap.data();
+          const deleteTime = data.deleteAt?.toDate?.() ?? new Date(0);
+          if (deleteTime < new Date()) return;
+          if (data.uid !== user.uid) return;
+
+          const li = document.createElement("li");
+          li.innerHTML = `
+            <strong>${data.item}</strong> (${data.platform})<br>
+            🕒 Expires at: ${deleteTime.toLocaleTimeString()}
+          `;
+          myList.appendChild(li);
+        });
+      });
+    });
+  </script>
+</head>
+<body>
+  <nav class="navbar">
+    <h2>📦 My Pool Requests</h2>
+    <a href="index.html">← Back to Main</a>
+  </nav>
+
+  <h3>Your Requests</h3>
+  <ul id="myRequestList">Loading...</ul>
+</body>
+</html>

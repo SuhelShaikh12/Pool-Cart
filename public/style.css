@@ -1,0 +1,182 @@
+/* --- Modern, beautiful UI overhaul --- */
+body {
+  font-family: 'Segoe UI', 'Roboto', Arial, sans-serif;
+  background: linear-gradient(120deg, #f8fafc 0%, #e0e7ff 100%);
+  margin: 0;
+  padding: 0;
+  color: #22223b;
+}
+
+.navbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #4f46e5;
+  color: #fff;
+  padding: 1.2rem 2rem;
+  box-shadow: 0 2px 8px rgba(79,70,229,0.08);
+  border-radius: 0 0 16px 16px;
+  margin-bottom: 2.5rem;
+}
+
+.navbar h2 {
+  margin: 0;
+  font-weight: 700;
+  font-size: 1.5rem;
+  letter-spacing: 1px;
+}
+
+.auth-section {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.auth-section button, .auth-section a.btn {
+  background: #fff;
+  color: #4f46e5;
+  border: none;
+  border-radius: 6px;
+  padding: 0.5rem 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+  text-decoration: none;
+}
+.auth-section button:hover, .auth-section a.btn:hover {
+  background: #6366f1;
+  color: #fff;
+}
+
+#userInfo {
+  font-size: 1rem;
+  color: #e0e7ff;
+}
+
+h2, h3 {
+  text-align: center;
+  margin-top: 2rem;
+  margin-bottom: 1rem;
+  font-weight: 700;
+}
+
+form#orderForm {
+  background: #fff;
+  max-width: 480px;
+  margin: 2rem auto 1.5rem auto;
+  padding: 2rem 2.5rem 1.5rem 2.5rem;
+  border-radius: 16px;
+  box-shadow: 0 4px 24px rgba(79,70,229,0.10);
+  display: flex;
+  flex-direction: column;
+  gap: 1.2rem;
+}
+
+form#orderForm input[type="text"],
+form#orderForm input[type="number"] {
+  padding: 0.7rem 1rem;
+  border: 1px solid #c7d2fe;
+  border-radius: 6px;
+  font-size: 1rem;
+  background: #f1f5f9;
+  transition: border 0.2s;
+}
+form#orderForm input:focus {
+  border: 1.5px solid #6366f1;
+  outline: none;
+}
+form#orderForm button[type="submit"] {
+  background: linear-gradient(90deg, #6366f1 0%, #818cf8 100%);
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 0.8rem 0;
+  font-size: 1.1rem;
+  font-weight: 700;
+  cursor: pointer;
+  margin-top: 0.5rem;
+  box-shadow: 0 2px 8px rgba(99,102,241,0.10);
+  transition: background 0.2s;
+}
+form#orderForm button[type="submit"]:hover {
+  background: linear-gradient(90deg, #818cf8 0%, #6366f1 100%);
+}
+
+/* Section containers */
+div {
+  max-width: 600px;
+  margin: 2rem auto 1.5rem auto;
+  background: #fff;
+  border-radius: 14px;
+  box-shadow: 0 2px 16px rgba(99,102,241,0.07);
+  padding: 1.5rem 2rem 1.5rem 2rem;
+}
+
+ul {
+  list-style: none;
+  padding: 0;
+  margin: 0.5rem 0 1.5rem 0;
+}
+
+ul#nearbyList li, ul#requestList li, ul#myRequestList li {
+  background: #f1f5f9;
+  margin-bottom: 0.7rem;
+  padding: 1rem 1.2rem;
+  border-radius: 8px;
+  box-shadow: 0 1px 4px rgba(99,102,241,0.04);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 1.05rem;
+}
+
+ul#nearbyList li strong, ul#requestList li strong, ul#myRequestList li strong {
+  color: #4f46e5;
+}
+
+ul#nearbyList li button, ul#requestList li button, ul#myRequestList li button {
+  background: #4f46e5;
+  color: #fff;
+  border: none;
+  border-radius: 5px;
+  padding: 0.4rem 0.9rem;
+  font-size: 0.98rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+ul#nearbyList li button:hover, ul#requestList li button:hover, ul#myRequestList li button:hover {
+  background: #6366f1;
+}
+
+@media (max-width: 700px) {
+  .navbar, form#orderForm, div {
+    padding: 1rem;
+  }
+  form#orderForm, div {
+    max-width: 98vw;
+  }
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  background: #e0e7ff;
+}
+::-webkit-scrollbar-thumb {
+  background: #a5b4fc;
+  border-radius: 8px;
+}
+
+form#orderForm, div, ul li {
+  animation: fadeIn 0.7s cubic-bezier(.39,.575,.565,1) both;
+}
+@keyframes fadeIn {
+  0% { opacity: 0; transform: translateY(20px); }
+  100% { opacity: 1; transform: none; }
+}
+
+.center {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+/* --- End modern UI --- */

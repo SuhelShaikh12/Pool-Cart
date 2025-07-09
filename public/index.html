@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Food Together</title>
+  <link rel="stylesheet" href="style.css" />
+  <script type="module">
+    import {
+      getAuth,
+      signInWithPopup,
+      GoogleAuthProvider,
+      signOut,
+      onAuthStateChanged,
+      setPersistence,
+      browserLocalPersistence
+    } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import {
+      getFirestore,
+      collection,
+      addDoc,
+      deleteDoc,
+      doc,
+      serverTimestamp,
+      onSnapshot,
+      getDocs
+    } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBWRDU9WCvVjns7If96eLze75v6tIldOVQ",
+      authDomain: "pooltogether-69b50.firebaseapp.com",
+      projectId: "pooltogether-69b50",
+      storageBucket: "pooltogether-69b50.firebasestorage.app",
+      messagingSenderId: "531393414453",
+      appId: "1:531393414453:web:21a9de47373e35eb81787c"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const auth = getAuth(app);
+
+    // 🔒 Set auth persistence to survive refresh
+    await setPersistence(auth, browserLocalPersistence);
+
+    // Make these available globally to script.js
+    window.db = db;
+    window.collection = collection;
+    window.addDoc = addDoc;
+    window.deleteDoc = deleteDoc;
+    window.doc = doc;
+    window.serverTimestamp = serverTimestamp;
+    window.onSnapshot = onSnapshot;
+    window.getDocs = getDocs;
+
+    window.auth = auth;
+    window.signInWithPopup = signInWithPopup;
+    window.GoogleAuthProvider = GoogleAuthProvider;
+    window.signOut = signOut;
+    window.onAuthStateChanged = onAuthStateChanged;
+  </script>
+
+
+
+</head>
+<body>
+  <nav class="navbar">
+    <h2>🥡 Pool Together</h2>
+    <div id="authControls" class="auth-section">
+      <button id="loginBtn">🔐 Login with Google</button>
+      <button id="logoutBtn" style="display:none;">🚪 Logout</button>
+      <span id="userInfo"></span>
+
+      <button><a href="my-requests.html" class="btn">📋 My Requests</a></button>
+
+    </div>
+  </nav>
+
+  <h2>📦 Pool Together Quick Commerce Request</h2>
+<form id="orderForm">
+  <input type="text" id="item" placeholder="Add Description about Item" required />
+  <input type="text" id="platform" placeholder="Platform (e.g., Zepto, Blinkit)" required />
+  <input type="number" id="duration" placeholder="Expire after (minutes)" required min="1" max="180" />
+  <button type="submit">Submit Request</button>
+</form>
+
+<div>
+  <h3>Nearby Requests (within 1 km):</h3>
+  <ul id="nearbyList"></ul>
+  <ul id="requestList">Loading nearby requests...</ul>
+
+</div>
+  <h3>My Requests</h3>
+  <ul id="myRequestList">Loading your requests...</ul>
+
+  
+
+  <script type="module" src="script.js"></script>
+</body>
+</html>
