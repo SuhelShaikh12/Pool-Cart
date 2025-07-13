@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Request Chat</title>
+  <link rel="stylesheet" href="chat.css">
+</head>
+<body>
+  <div id="chatContainer">
+    <button id="backBtn">🔙 Back</button>
+    <h2>💬 Group Chat</h2>
+    <div id="chatBox"></div>
+    <div style="display:flex;align-items:center;gap:0.5rem;">
+      <input type="text" id="messageInput" placeholder="Type your message..." />
+      <button id="sendBtn">Send</button>
+    </div>
+  </div>
+  <script type="module">
+    import {
+      getFirestore,
+      collection,
+      addDoc,
+      serverTimestamp,
+      onSnapshot,
+      query,
+      orderBy
+    } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+    import {
+      getAuth,
+      onAuthStateChanged
+    } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+    import {
+      initializeApp,
+      getApps
+    } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBWRDU9WCvVjns7If96eLze75v6tIldOVQ",
+      authDomain: "pooltogether-69b50.firebaseapp.com",
+      projectId: "pooltogether-69b50",
+      storageBucket: "pooltogether-69b50.appspot.com",
+      messagingSenderId: "531393414453",
+      appId: "1:531393414453:web:21a9de47373e35eb81787c"
+    };
+
+    const app = getApps().length ? getApps()[0] : initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const auth = getAuth(app);
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const requestId = urlParams.get("requestId");
+    const nameFromURL = urlParams.get("name"); // fallback if displayName not loaded
+
+    const chatBox = document.getElementById("chatBox");
+    const input = document.getElementById("messageInput");
+    const sendBtn = document.getElementById("sendBtn");
+
+    let currentUser = null;
+
+    onAuthStateChanged(auth, (user) => {
+      if (!user) {
+        alert("❌ You must be logged in to use chat.");
+        window.location.href = "index.html";
+        return;
+      }
+      currentUser = user;
+      const username = user.displayName || nameFromURL || "Anonymous";
+      // 🔄 Real-time listener for chat messages (ordered by time)
+      const messagesRef = collection(db, `requests/${requestId}/messages`);
+      const orderedQuery = query(messagesRef, orderBy("timestamp"));
+      onSnapshot(orderedQuery, (snapshot) => {
+        chatBox.innerHTML = "";
+        snapshot.forEach((doc) => {
+          const msg = doc.data();
+          const div = document.createElement("div");
+          div.className = "msg" + (msg.user === username ? " me" : "");
+          div.innerHTML = `<span class='user'>${msg.user}</span>: <span class='bubble'>${msg.text}</span>`;
+          div.style.display = "block";
+          div.style.marginBottom = "12px";
+          div.style.transition = "box-shadow 0.2s";
+          div.style.boxShadow = msg.user === username ? "0 2px 12px #6366f155" : "0 2px 8px #818cf855";
+          div.style.borderRadius = "10px";
+          div.style.padding = "8px 14px";
+          div.style.background = msg.user === username ? "linear-gradient(90deg,#6366f1 0%,#818cf8 100%)" : "#e0e7ff";
+          div.style.color = msg.user === username ? "#fff" : "#22223b";
+          div.style.fontWeight = "500";
+          div.style.letterSpacing = "0.2px";
+          div.style.maxWidth = "80%";
+          div.style.marginLeft = msg.user === username ? "auto" : "0";
+          div.style.textAlign = msg.user === username ? "right" : "left";
+          chatBox.appendChild(div);
+        });
+        chatBox.scrollTop = chatBox.scrollHeight;
+      });
+      // 📨 Send message
+      sendBtn.onclick = async () => {
+        const text = input.value.trim();
+        if (!text) return;
+        sendBtn.disabled = true;
+        try {
+          await addDoc(messagesRef, {
+            user: username,
+            text,
+            timestamp: serverTimestamp()
+          });
+          input.value = "";
+        } catch (err) {
+          console.error("Send failed:", err);
+          alert("❌ Could not send message.");
+        }
+        sendBtn.disabled = false;
+        input.focus();
+      };
+      input.addEventListener('keydown', e => {
+        if (e.key === 'Enter') sendBtn.click();
+      });
+    });
+    document.getElementById("backBtn").onclick = () => {
+      window.location.href = "index.html";
+    };
+  </script>
+</body>
+</html>
+

@@ -28,20 +28,22 @@ const firebaseConfig = {
   appId: "1:531393414453:web:21a9de47373e35eb81787c"
 };
 
-let app;
-if (!getApps().length) {
-  app = initializeApp(firebaseConfig);
-} else {
-  app = getApps()[0];
-}
-
+let app = getApps().length ? getApps()[0] : initializeApp(firebaseConfig);
 const db = getFirestore(app);
-
 const auth = getAuth(app);
 
 let currentUser = null;
+onAuthStateChanged(auth, (user) => {
+  currentUser = user;
+  updateAuthUI();
+  if (user) {
+    getUserLocationAndListen();
+    getMyRequests();
+  } else {
+    document.getElementById("myRequestList").innerHTML = "";
+  }
+});
 
-// 👉 Auth UI Handling
 const loginBtn = document.getElementById("loginBtn");
 const logoutBtn = document.getElementById("logoutBtn");
 const userInfo = document.getElementById("userInfo");
@@ -51,7 +53,6 @@ loginBtn.onclick = async () => {
   try {
     const result = await signInWithPopup(auth, provider);
     currentUser = result.user;
-    console.log("User logged in:", currentUser);
     updateAuthUI();
   } catch (err) {
     alert("Login failed");
@@ -77,35 +78,41 @@ function updateAuthUI() {
   }
 }
 
-// ✅ Auto login persistence
 onAuthStateChanged(auth, (user) => {
   currentUser = user;
   updateAuthUI();
   if (user) {
-    getUserLocationAndListen();   // 👈 Load nearby requests
-    getMyRequests();              // 🆕 Load MY requests
+    setTimeout(() => {
+      onAuthStateChanged(auth, (user) => {
+  currentUser = user;
+  updateAuthUI(); // this is already in your code
+  if (user) {
+    getUserLocationAndListen(); // 🔒 safe to run now
+    getMyRequests();            // 🔒 safe to run now
   } else {
-    // Optional: Clear your request list when logged out
+    document.getElementById("myRequestList").innerHTML = ""; // optional
+  }
+});
+
+    }, 1000);
+  } else {
     document.getElementById("myRequestList").innerHTML = "";
+    document.getElementById("requestList").innerHTML = "";
   }
 });
 
 document.getElementById("orderForm").addEventListener("submit", async function (e) {
   e.preventDefault();
-  if (!auth.currentUser) {
-    alert("You must be logged in to submit a request.");
-    return;
-  }
+  if (!auth.currentUser) return alert("You must be logged in to submit a request.");
 
   const item = document.getElementById("item").value;
   const platform = document.getElementById("platform").value;
+  const duration = parseInt(document.getElementById("duration").value);
 
-  if (!navigator.geolocation) {
-    alert("Geolocation not supported by your browser");
-    return;
-  }
+  if (!navigator.geolocation) return alert("Geolocation not supported.");
 
-  navigator.geolocation.getCurrentPosition(async (position) => {
+navigator.geolocation.getCurrentPosition(
+  async (position) => {
     const { latitude, longitude } = position.coords;
     const duration = parseInt(document.getElementById("duration").value);
     const deleteAt = new Date(Date.now() + duration * 60 * 1000);
@@ -120,8 +127,6 @@ document.getElementById("orderForm").addEventListener("submit", async function (
         deleteAt,
         uid: auth.currentUser?.uid,
         name: auth.currentUser?.displayName
-
-
       });
 
       alert("✅ Request submitted successfully!");
@@ -130,13 +135,23 @@ document.getElementById("orderForm").addEventListener("submit", async function (
       console.error("Firestore Error:", err);
       alert("❌ Failed to submit request.");
     }
-  });
+  },
+  (error) => {
+    console.error("❌ Location Error:", error);
+    alert("❌ Failed to get location. Please allow location access.");
+  }
+);
+
+
 });
 
 function getUserLocationAndListen() {
   navigator.geolocation.getCurrentPosition((pos) => {
     const { latitude, longitude } = pos.coords;
     liveNearbyRequests(latitude, longitude);
+  }, (err) => {
+    console.error(err);
+    alert("Location access denied.");
   });
 }
 
@@ -144,11 +159,9 @@ function getDistanceFromLatLonInKm(lat1, lon1, lat2, lon2) {
   const R = 6371;
   const dLat = (lat2 - lat1) * Math.PI / 180;
   const dLon = (lon2 - lon1) * Math.PI / 180;
-  const a =
-    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos(lat1 * Math.PI / 180) *
-    Math.cos(lat2 * Math.PI / 180) *
-    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+            Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+            Math.sin(dLon / 2) * Math.sin(dLon / 2);
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   return R * c;
 }
@@ -159,9 +172,9 @@ function liveNearbyRequests(currentLat, currentLng) {
 
   onSnapshot(collection(db, "requests"), (snapshot) => {
     listEl.innerHTML = "";
+
     snapshot.forEach((docSnap) => {
       const data = docSnap.data();
-
       const deleteTime = data.deleteAt?.toDate?.() ?? new Date(0);
       if (deleteTime < new Date()) return;
 
@@ -173,8 +186,8 @@ function liveNearbyRequests(currentLat, currentLng) {
       const contentDiv = document.createElement("div");
       contentDiv.className = "msg-content";
       contentDiv.innerHTML = `
-        <strong>🛒 ${data.item}</strong><br />
-        <span>Platform: ${data.platform}</span><br />
+        <strong>🛒 ${data.item}</strong><br/>
+        <span>Platform: ${data.platform}</span><br/>
         <span>📍 ${distance.toFixed(2)} km away</span>
       `;
 
@@ -184,81 +197,69 @@ function liveNearbyRequests(currentLat, currentLng) {
       const timerSpan = document.createElement("span");
       timerSpan.className = "timer";
 
-      const btn = document.createElement("button");
-      btn.textContent = "❌ Delete";
-      btn.onclick = async () => {
+      const joinBtn = document.createElement("button");
+      joinBtn.style.marginRight = "8px";
+
+      const chatBtn = document.createElement("button");
+      chatBtn.textContent = "💬 Chat";
+      chatBtn.style.display = "none";
+
+      const deleteBtn = document.createElement("button");
+      deleteBtn.textContent = "❌ Delete";
+      deleteBtn.style.display = (data.uid === currentUser?.uid) ? "inline-block" : "none";
+      deleteBtn.onclick = async () => {
         await deleteDoc(doc(db, "requests", docSnap.id));
         li.remove();
       };
 
-      const joinBtn = document.createElement("button");
-      joinBtn.textContent = "🤝 Join";
-      joinBtn.style.marginBottom = "6px";
+      const joinedUsersRef = collection(db, `requests/${docSnap.id}/joinedUsers`);
 
-      joinBtn.onclick = async () => {
-        const user = currentUser.displayName;
-        if (!user) return;
+      onSnapshot(joinedUsersRef, (joinedSnap) => {
+        const userDoc = joinedSnap.docs.find(doc => doc.data().name === currentUser.displayName);
 
-        joinBtn.disabled = true;
-        joinBtn.textContent = `✅ Joined as ${user}`;
-        joinBtn.style.backgroundColor = "#4caf50";
+        if (userDoc) {
+          joinBtn.textContent = "🚪 Unjoin";
+          joinBtn.style.backgroundColor = "#f44336";
+          chatBtn.style.display = "inline-block";
 
-        const userRef = await addDoc(
-          collection(db, `requests/${docSnap.id}/joinedUsers`),
-          {
-            name: user,
-            joinedAt: serverTimestamp()
-          }
-        );
-
-        const chatDiv = document.createElement("div");
-        chatDiv.style.marginTop = "10px";
-        chatDiv.innerHTML = `
-          <div id="chat_${docSnap.id}" class="chat-box" style="max-height: 100px; overflow-y: auto; background: #f1f1f1; padding: 6px; margin-bottom: 6px; border-radius: 6px;"></div>
-          <input id="input_${docSnap.id}" type="text" placeholder="Message..." style="width: 65%; padding: 6px;">
-          <button id="send_${docSnap.id}" style="padding: 6px;">Send</button>
-        `;
-
-        li.appendChild(chatDiv);
-        setupPerRequestChat(docSnap.id, user);
-
-        const leaveBtn = document.createElement("button");
-        leaveBtn.textContent = "🚪 Leave";
-        leaveBtn.style.marginLeft = "10px";
-        leaveBtn.onclick = async () => {
-          await deleteDoc(userRef);
-          chatDiv.remove();
-          leaveBtn.remove();
-          joinBtn.disabled = false;
+          joinBtn.onclick = async () => {
+            await deleteDoc(doc(db, `requests/${docSnap.id}/joinedUsers/${userDoc.id}`));
+            joinBtn.textContent = "🤝 Join";
+            joinBtn.style.backgroundColor = "";
+            chatBtn.style.display = "none";
+          };
+        } else {
           joinBtn.textContent = "🤝 Join";
           joinBtn.style.backgroundColor = "";
-        };
+          chatBtn.style.display = "none";
 
-        actionsDiv.appendChild(leaveBtn);
+          joinBtn.onclick = async () => {
+            await addDoc(joinedUsersRef, {
+              name: currentUser.displayName,
+              joinedAt: serverTimestamp()
+            });
+          };
+        }
+      });
+
+      chatBtn.onclick = () => {
+        const query = new URLSearchParams({
+          requestId: docSnap.id,
+          name: currentUser.displayName
+        }).toString();
+        window.location.href = `chat.html?${query}`;
       };
 
       actionsDiv.appendChild(joinBtn);
+      actionsDiv.appendChild(chatBtn);
       actionsDiv.appendChild(timerSpan);
-      actionsDiv.appendChild(btn);
+      actionsDiv.appendChild(deleteBtn);
 
       li.appendChild(contentDiv);
       li.appendChild(actionsDiv);
       listEl.appendChild(li);
 
       startCountdown(deleteTime, timerSpan, li, docSnap.id);
-
-      // 👥 Show Joined Users
-      const joinedDiv = document.createElement("div");
-      joinedDiv.style.fontSize = "13px";
-      joinedDiv.style.marginTop = "6px";
-      joinedDiv.style.color = "#555";
-      joinedDiv.textContent = "👥 Joined: Loading...";
-      li.appendChild(joinedDiv);
-
-      onSnapshot(collection(db, `requests/${docSnap.id}/joinedUsers`), (snap) => {
-        const names = snap.docs.map(d => d.data().name);
-        joinedDiv.textContent = `👥 Joined: ${names.join(", ") || "None yet"}`;
-      });
     });
   });
 }
@@ -281,35 +282,6 @@ function startCountdown(deleteTime, displaySpan, listItem, docId) {
   updateTimer();
 }
 
-function setupPerRequestChat(requestId, username) {
-  const chatBox = document.getElementById(`chat_${requestId}`);
-  const input = document.getElementById(`input_${requestId}`);
-  const sendBtn = document.getElementById(`send_${requestId}`);
-
-  onSnapshot(collection(db, `requests/${requestId}/messages`), (snapshot) => {
-    chatBox.innerHTML = "";
-    snapshot.forEach((doc) => {
-      const msg = doc.data();
-      const div = document.createElement("div");
-      div.innerHTML = `<strong>${msg.user}</strong>: ${msg.text}`;
-      chatBox.appendChild(div);
-    });
-    chatBox.scrollTop = chatBox.scrollHeight;
-  });
-
-  sendBtn.onclick = async () => {
-    const text = input.value.trim();
-    if (!text) return;
-
-    await addDoc(collection(db, `requests/${requestId}/messages`), {
-      user: username,
-      text,
-      timestamp: serverTimestamp()
-    });
-    input.value = "";
-  };
-}
-
 function getMyRequests() {
   const listEl = document.getElementById("myRequestList");
   listEl.innerHTML = "Loading your requests...";
@@ -321,8 +293,7 @@ function getMyRequests() {
       const data = docSnap.data();
       const deleteTime = data.deleteAt?.toDate?.() ?? new Date(0);
       if (deleteTime < new Date()) return;
-
-      if (data.uid !== auth.currentUser?.uid) return;
+      if (data.uid !== currentUser?.uid) return;
 
       const li = document.createElement("li");
       li.innerHTML = `

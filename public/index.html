@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Pool Together</title>
   <link rel="stylesheet" href="style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+
   <script type="module">
     import {
       getAuth,
@@ -65,9 +67,9 @@
 
 </head>
 <body>
-  <nav class="navbar">
+  <nav class="navbar flex justify-between px-7">
     <h2>🥡 Pool Cart Together</h2>
-    <div id="authControls" class="auth-section">
+    <div id="authControls" class="auth-section tracking-tight w-2/3 p-0">
       <button id="loginBtn">🔐 Login with Google</button>
       <button id="logoutBtn" style="display:none;">🚪 Logout</button>
       <span id="userInfo"></span>
