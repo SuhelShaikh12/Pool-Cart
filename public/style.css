@@ -215,7 +215,9 @@ form#orderForm, div, ul li {
   align-items: center;
 }
 
-
+.logoImage{
+  height: 170px;
+}
 
 /* --- End modern UI --- */
 
