@@ -3,7 +3,7 @@
 
 
 <div align="center">
-  <img src="web/assets/logo.svg" alt="Group-Cart Logo" width="200" height="200">
+
   <h3>Shop Together, Save Together</h3>
 </div>
 
