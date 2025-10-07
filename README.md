@@ -358,4 +358,4 @@ This project is licensed under the ISC License.
 
 ## Author
 
-- [@heyymateen](https://github.com/heyymateen)
+- Suhel
